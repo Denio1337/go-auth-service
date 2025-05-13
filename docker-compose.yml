@@ -1,0 +1,28 @@
+services:
+  web: # Go auth service
+    build: .
+    container_name: go_web
+    env_file:
+      - .env
+    ports:
+      - 8192:8192 # Exposed port
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+    command: air cmd/main.go -b 0.0.0.0 # Run with live reload
+
+  db: # PostgreSQL
+    image: postgres:alpine
+    container_name: go_db
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    ports:
+      - ${DB_PORT}:${DB_PORT}
+    volumes:
+      - postgres-db:/var/lib/postgresql/data # Volume to persist DB Data between launches
+
+volumes:
+  postgres-db:
