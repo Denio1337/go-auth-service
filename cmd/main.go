@@ -1,6 +1,9 @@
 package main
 
 import (
+	"app/internal/config"
+	"app/internal/router"
+	"app/internal/storage"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
@@ -15,11 +18,11 @@ func main() {
 	})
 
 	// DB Connection
-	//database.ConnectDB()
+	storage.MustConnect()
 
 	// Setup routes
-	//router.SetupRoutes(app)
+	router.SetupRoutes(app)
 
 	// Run application
-	log.Fatal(app.Listen(":8192"))
+	log.Fatal(app.Listen(config.Get("APP_ADDRESS")))
 }
