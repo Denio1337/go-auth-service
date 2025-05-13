@@ -1,4 +1,4 @@
-package router
+package handler
 
 import (
 	"app/internal/handler/hello"

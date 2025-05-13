@@ -2,7 +2,7 @@ package main
 
 import (
 	"app/internal/config"
-	"app/internal/router"
+	"app/internal/handler"
 	"app/internal/storage"
 	"log"
 
@@ -21,7 +21,7 @@ func main() {
 	storage.MustConnect()
 
 	// Setup routes
-	router.SetupRoutes(app)
+	handler.SetupRoutes(app)
 
 	// Run application
 	log.Fatal(app.Listen(config.Get("APP_ADDRESS")))
