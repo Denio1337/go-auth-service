@@ -1,7 +1,7 @@
-package handler
+package router
 
 import (
-	"app/internal/handler/hello"
+	"app/internal/router/hello"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -11,7 +11,7 @@ import (
 func SetupRoutes(app *fiber.App) {
 	// Middleware
 	api := app.Group("/api", logger.New())
-	api.Get("/", hello.New())
+	api.Get("/", hello.Handle)
 
 	// Auth
 	//auth := api.Group("/auth")

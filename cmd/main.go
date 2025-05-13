@@ -2,8 +2,7 @@ package main
 
 import (
 	"app/internal/config"
-	"app/internal/handler"
-	"app/internal/storage"
+	"app/internal/router"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
@@ -17,11 +16,8 @@ func main() {
 		AppName:      "Go Auth Service",
 	})
 
-	// DB Connection
-	storage.MustConnect()
-
 	// Setup routes
-	handler.SetupRoutes(app)
+	router.SetupRoutes(app)
 
 	// Run application
 	log.Fatal(app.Listen(config.Get("APP_ADDRESS")))
