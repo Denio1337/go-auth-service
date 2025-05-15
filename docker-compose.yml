@@ -5,7 +5,7 @@ services:
     env_file:
       - .env
     ports:
-      - 8192:8192 # Exposed port
+      - 8192:8192 # API port
     volumes:
       - .:/app
     depends_on:

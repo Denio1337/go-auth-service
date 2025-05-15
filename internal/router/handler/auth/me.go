@@ -9,6 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// GET /auth/me: get user profile
 func Me(c *fiber.Ctx) error {
 	// Get user info from cookie
 	user, ok := c.Locals("user").(*jwt.Token)
@@ -29,7 +30,7 @@ func Me(c *fiber.Ctx) error {
 
 	// Handle error from service
 	if err != nil {
-		cerr := *cerror.ErrInternalServer
+		cerr := *cerror.ErrUnauthorized
 		cerr.Message = err.Error()
 		return &cerr
 	}

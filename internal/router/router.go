@@ -40,7 +40,7 @@ func setupRoutes(app *fiber.App) {
 	authGroup.Get("/login", middleware.Identified(), auth.Login)
 
 	// Logout
-	authGroup.Get(
+	authGroup.Delete(
 		"/logout",
 		middleware.Identified(),
 		middleware.Protected(auth.CookieNameAccessToken),
@@ -64,7 +64,7 @@ func setupRoutes(app *fiber.App) {
 	)
 
 	// Refresh
-	authGroup.Post(
+	authGroup.Patch(
 		"/refresh",
 		middleware.Identified(),
 		middleware.Protected(auth.CookieNameRefreshToken),

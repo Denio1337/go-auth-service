@@ -1,0 +1,322 @@
+basePath: /api
+definitions:
+  auth.LoginResponse:
+    properties:
+      id:
+        type: integer
+      username:
+        type: string
+    type: object
+  auth.MeResponse:
+    properties:
+      id:
+        type: integer
+      username:
+        type: string
+    type: object
+  auth.RegisterDTO:
+    properties:
+      password:
+        maxLength: 30
+        minLength: 8
+        type: string
+      username:
+        maxLength: 20
+        minLength: 5
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  auth.RegisterResponse:
+    properties:
+      id:
+        type: integer
+      username:
+        type: string
+    type: object
+  response.Response:
+    properties:
+      data: {}
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+externalDocs:
+  description: OpenAPI
+  url: https://swagger.io/resources/open-api/
+host: localhost:8080
+info:
+  contact: {}
+  description: Go auth service API
+  license:
+    name: MIT
+    url: https://mit-license.org/
+  title: Go auth service API
+  version: "2.0"
+paths:
+  /auth/login:
+    get:
+      consumes:
+      - application/json
+      description: Get access and refresh tokens
+      parameters:
+      - description: user's username
+        in: query
+        name: username
+        required: true
+        type: string
+      - description: user's password
+        in: query
+        name: password
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Authentication cookies are set
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/auth.LoginResponse'
+              type: object
+        "400":
+          description: Query parameters validation failed (specified in message)
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "401":
+          description: Unknown user or incorrect password (specified in message)
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      summary: Get access and refresh tokens
+      tags:
+      - Auth
+  /auth/logout:
+    delete:
+      consumes:
+      - application/json
+      description: Requires authentication tokens set in cookie
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Authentication cookies are unset
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Query parameters validation failed (specified in message)
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "401":
+          description: Some authentication problem (specified in message)
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "403":
+          description: Some access problems (specified in message)
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      summary: Clear access and refresh tokens
+      tags:
+      - Auth
+  /auth/me:
+    get:
+      consumes:
+      - application/json
+      description: Requires authentication tokens set in cookie
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User profile received
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/auth.MeResponse'
+              type: object
+        "400":
+          description: Query parameters validation failed (specified in message)
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "401":
+          description: Some authentication problem (specified in message)
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      summary: Get user profile
+      tags:
+      - Auth
+  /auth/refresh:
+    patch:
+      consumes:
+      - application/json
+      description: Requires refresh token set in cookie
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tokens refreshed
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Query parameters validation failed (specified in message)
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "401":
+          description: Some authentication problem (specified in message)
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "403":
+          description: User agent changed (specified in message)
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      summary: Refresh tokens
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Requires authentication tokens set in cookie
+      parameters:
+      - description: user's username
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User profile received
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/auth.RegisterResponse'
+              type: object
+        "400":
+          description: Query parameters validation failed (specified in message)
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "401":
+          description: Some authentication problem (specified in message)
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "403":
+          description: Some access problems (specified in message)
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "409":
+          description: User already exists (specified in message)
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      summary: Register new user
+      tags:
+      - Auth
+  /ping:
+    get:
+      consumes:
+      - application/json
+      description: Check API's availability
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: API is alive
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      tags:
+      - General
+swagger: "2.0"

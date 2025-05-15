@@ -8,7 +8,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// GET /auth/logout: clear tokens
+// DELETE /auth/logout: clear tokens
 func Logout(c *fiber.Ctx) error {
 	// Get identity
 	identity, ok := c.Locals("identity").(string)
@@ -37,7 +37,7 @@ func Logout(c *fiber.Ctx) error {
 
 	// Handle error from service
 	if err != nil {
-		cerr := *cerror.ErrInternalServer
+		cerr := *cerror.ErrForbidden
 		cerr.Message = err.Error()
 		return &cerr
 	}

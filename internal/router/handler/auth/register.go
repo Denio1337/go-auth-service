@@ -10,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// POST: Register new user
 func Register(c *fiber.Ctx) error {
 	// Parse body
 	dto := new(RegisterDTO)
@@ -37,7 +38,7 @@ func Register(c *fiber.Ctx) error {
 		if errors.Is(err, auth.ErrUserExists) {
 			cerr = *cerror.ErrConflict
 		} else {
-			cerr = *cerror.ErrInvalidInput
+			cerr = *cerror.ErrForbidden
 		}
 
 		cerr.Message = err.Error()

@@ -15,6 +15,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// PATCH: Refresh tokens
 func Refresh(c *fiber.Ctx) error {
 	// Get user info from cookie
 	user := c.Locals("user").(*jwt.Token)
