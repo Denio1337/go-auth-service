@@ -27,14 +27,28 @@ type (
 		Username string `json:"username"`
 	}
 
+	// Response for GET /auth/me
+	MeResponse struct {
+		ID       uint   `json:"id"`
+		Username string `json:"username"`
+	}
+
+	// Parameters to set/clear cookies
 	CookieParams struct {
 		Name    string
 		Value   string
 		Expires time.Time
 	}
+
+	WebhookPayload struct {
+		ID        uint
+		Timestamp time.Time
+		Message   string
+	}
 )
 
 const (
+	// Auth cookie names
 	CookieNameAccessToken  = "auth_access"
 	CookieNameRefreshToken = "auth_refresh"
 )

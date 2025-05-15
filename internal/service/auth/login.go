@@ -5,7 +5,6 @@ import (
 	"app/internal/service/utils"
 	"app/internal/storage"
 	"app/internal/storage/model"
-	"errors"
 	"fmt"
 	"time"
 
@@ -15,47 +14,56 @@ import (
 
 // Get access and refresh tokens
 func Login(params *LoginParams) (*LoginResult, error) {
-	// Getting user from storage
+	const op = "service/login"
+
+	// Get user from storage
 	user, err := storage.GetUserByUsername(params.Username)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: can not get user from storage", op)
 	}
+	// User not found
 	if user == nil {
-		return nil, errors.New("service/auth: unknown user")
+		return nil, fmt.Errorf("%s: unknown username", op)
 	}
 
 	// Check if password is incorrect
 	if isCorrectPassword := utils.CompareWithHash(params.Password, user.Password); !isCorrectPassword {
-		return nil, errors.New("incorrect password")
+		return nil, fmt.Errorf("%s: incorrect user password", op)
 	}
 
-	// Generate pair id
+	// Generate general tokens parameters
 	pairId := uuid.New().String()
+	payload := &TokenPayload{
+		Username: user.Username,
+		ID:       user.ID,
+		Identity: params.Identity,
+		PairID:   pairId,
+	}
 
 	// Generate access token
 	accessExpires := time.Now().Add(TokenLiveTimeAccess)
-	access, err := generateToken(&TokenPayload{User: user, Identity: params.Identity}, accessExpires, pairId)
+	access, err := generateToken(payload, accessExpires)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: can not generate access token", op)
 	}
 
 	// Generate refresh token
 	refreshExpires := time.Now().Add(TokenLiveTimeRefresh)
-	refresh, err := generateToken(&TokenPayload{User: user, Identity: params.Identity}, refreshExpires, pairId)
+	refresh, err := generateToken(payload, refreshExpires)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: can not generate refresh token", op)
 	}
 
 	// Revoke previous refresh token
-	err = storage.RevokeRefreshTokenByIdentity(params.Identity)
+	_, err = storage.RevokeRefreshTokenByIdentity(params.Identity)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: can not revoke refresh token", op)
 	}
 
 	// Hash refresh token
 	refreshHashed, err := utils.Hash(refresh)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: can not hash refresh token", op)
 	}
 
 	// Save new refresh token
@@ -64,10 +72,12 @@ func Login(params *LoginParams) (*LoginResult, error) {
 		Hash:      refreshHashed,
 		PairID:    pairId,
 		Identity:  params.Identity,
+		UserAgent: params.UserAgent,
+		IP:        params.IP,
 		ExpiresAt: refreshExpires,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: can not save refresh token in storage", op)
 	}
 
 	return &LoginResult{
@@ -81,7 +91,7 @@ func Login(params *LoginParams) (*LoginResult, error) {
 }
 
 // Generate access/refresh token
-func generateToken(payload *TokenPayload, expires time.Time, pairId string) (string, error) {
+func generateToken(payload *TokenPayload, expires time.Time) (string, error) {
 	// Set SHA512 hash method
 	access := jwt.New(jwt.SigningMethodHS512)
 
@@ -95,14 +105,14 @@ func generateToken(payload *TokenPayload, expires time.Time, pairId string) (str
 	// Set identity claim
 	identity, err := utils.Hash(payload.Identity)
 	if err != nil {
-		return "", errors.New("service/auth: can't hash identity")
+		return "", err
 	}
 	claims["identity"] = identity
 
 	// Signing with secret key
-	t, err := access.SignedString([]byte(config.Get("SECRET")))
+	t, err := access.SignedString([]byte(config.Get(config.EnvSecret)))
 	if err != nil {
-		return "", fmt.Errorf("service/auth: token sign error")
+		return "", err
 	}
 
 	return t, nil

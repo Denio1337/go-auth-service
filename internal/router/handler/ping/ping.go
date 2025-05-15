@@ -1,13 +1,11 @@
 package ping
 
 import (
+	"app/internal/router/types/response"
+
 	"github.com/gofiber/fiber/v2"
 )
 
 func Ping(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{
-		"status":  "success",
-		"message": "I'm alive",
-		"data":    nil,
-	})
+	return c.JSON(response.SuccessResponse(nil))
 }

@@ -4,12 +4,18 @@ import (
 	"app/internal/service/utils"
 	"app/internal/storage"
 	"app/internal/storage/model"
+	"errors"
+	"fmt"
 )
 
+// Add new user
 func Register(params *RegisterParams) (*RegisterResult, error) {
+	const op = "service/register"
+
+	// Hash password
 	hashedPassword, err := utils.Hash(params.Password)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: can not hash password", op)
 	}
 
 	user := &model.User{
@@ -17,10 +23,14 @@ func Register(params *RegisterParams) (*RegisterResult, error) {
 		Password: hashedPassword,
 	}
 
-	// Adding user to storage
+	// Save user in storage
 	err = storage.AddUser(user)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, storage.ErrDuplicatedKey) {
+			return nil, ErrUserExists
+		}
+
+		return nil, fmt.Errorf("%s: can not save user in storage", op)
 	}
 
 	return &RegisterResult{

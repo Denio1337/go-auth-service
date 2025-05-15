@@ -1,6 +1,9 @@
 package contract
 
-import "app/internal/storage/model"
+import (
+	"app/internal/storage/model"
+	"errors"
+)
 
 // Storage interface
 type Storage interface {
@@ -13,7 +16,11 @@ type Storage interface {
 	GetRefreshTokenByPairID(string) (*model.RefreshToken, error)
 	GetRefreshTokenByIdentity(string) (*model.RefreshToken, error)
 	AddRefreshToken(*model.RefreshToken) error
-	RevokeRefreshTokenByPairID(string) error
-	RevokeRefreshTokenByID(uint) error
-	RevokeRefreshTokenByIdentity(string) error
+	RevokeRefreshTokenByPairID(string) (uint, error)
+	RevokeRefreshTokenByID(uint) (uint, error)
+	RevokeRefreshTokenByIdentity(string) (uint, error)
 }
+
+var (
+	ErrDuplicatedKey = errors.New("duplicated key")
+)

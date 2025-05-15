@@ -1,32 +1,46 @@
 package auth
 
 import (
-	"app/internal/router/utils"
+	cerror "app/internal/router/types/error"
+	"app/internal/router/types/response"
 	"app/internal/service/auth"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-// Clear tokens
+// GET /auth/logout: clear tokens
 func Logout(c *fiber.Ctx) error {
+	// Get identity
+	identity, ok := c.Locals("identity").(string)
+	if !ok {
+		cerr := *cerror.ErrUnauthorized
+		cerr.Message = "can not identify user"
+		return &cerr
+	}
+
+	// Get refresh token from cookie
+	refreshToken := c.Cookies(CookieNameRefreshToken)
+	if refreshToken == "" {
+		cerr := *cerror.ErrUnauthorized
+		cerr.Message = "invalid refresh token"
+		return &cerr
+	}
+
 	// Route to service
-	identity := c.Locals("identity").(string)
 	err := auth.Logout(&auth.LogoutParams{
 		Refresh:  c.Cookies(CookieNameRefreshToken),
 		Identity: identity,
 	})
 
 	// Clear cookies
-	c.ClearCookie(CookieNameAccessToken, CookieNameRefreshToken)
+	setAuthCookies(c, nil)
 
-	// Some error in service
+	// Handle error from service
 	if err != nil {
-		return c.JSON(utils.ErrorResponse(err.Error()))
+		cerr := *cerror.ErrInternalServer
+		cerr.Message = err.Error()
+		return &cerr
 	}
 
-	// Success
-	return c.JSON(utils.SuccessResponse(LoginResponse{
-		ID:       0,
-		Username: "sex",
-	}))
+	return c.JSON(response.SuccessResponse(struct{}{}))
 }

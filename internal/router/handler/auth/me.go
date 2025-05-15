@@ -1,7 +1,8 @@
 package auth
 
 import (
-	"app/internal/router/utils"
+	cerror "app/internal/router/types/error"
+	"app/internal/router/types/response"
 	"app/internal/service/auth"
 
 	"github.com/gofiber/fiber/v2"
@@ -9,7 +10,15 @@ import (
 )
 
 func Me(c *fiber.Ctx) error {
-	user := c.Locals("user").(*jwt.Token)
+	// Get user info from cookie
+	user, ok := c.Locals("user").(*jwt.Token)
+	if !ok {
+		cerr := *cerror.ErrUnauthorized
+		cerr.Message = "invalid access token"
+		return &cerr
+	}
+
+	// Get user id
 	claims := user.Claims.(jwt.MapClaims)
 	id := claims["id"].(float64)
 
@@ -18,13 +27,14 @@ func Me(c *fiber.Ctx) error {
 		ID: uint(id),
 	})
 
-	// Some error in service
+	// Handle error from service
 	if err != nil {
-		return c.JSON(utils.ErrorResponse(err.Error()))
+		cerr := *cerror.ErrInternalServer
+		cerr.Message = err.Error()
+		return &cerr
 	}
 
-	// Success
-	return c.JSON(utils.SuccessResponse(LoginResponse{
+	return c.JSON(response.SuccessResponse(MeResponse{
 		ID:       result.ID,
 		Username: result.Username,
 	}))

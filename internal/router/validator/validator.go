@@ -14,6 +14,7 @@ func Validate(data any) []ValidationError {
 	// Initialize an array of validation errors
 	validationErrors := []ValidationError{}
 
+	// Process and fill validation errors
 	errs := instance.Struct(data)
 	if errs != nil {
 		for _, err := range errs.(validator.ValidationErrors) {

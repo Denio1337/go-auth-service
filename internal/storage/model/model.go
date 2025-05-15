@@ -35,6 +35,8 @@ type (
 
 		// Refresh token info
 		Identity  string    `gorm:"not null"`
+		UserAgent string    `gorm:"not null"`
+		IP        string    `gorm:"not null"`
 		ExpiresAt time.Time `gorm:"not null"`
 	}
 )

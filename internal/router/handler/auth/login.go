@@ -1,7 +1,8 @@
 package auth
 
 import (
-	"app/internal/router/utils"
+	cerror "app/internal/router/types/error"
+	"app/internal/router/types/response"
 	"app/internal/router/validator"
 	"app/internal/service/auth"
 	"time"
@@ -9,59 +10,88 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// GET /auth/login: get access and refresh tokens
 func Login(c *fiber.Ctx) error {
-	// Parsing query parameters
+	// Parse query parameters
 	dto := &LoginDTO{
 		Username: c.Query("username"),
 		Password: c.Query("password"),
 	}
 
-	// Query parameters validation
+	// Validate query parameters
 	if errs := validator.Validate(dto); len(errs) > 0 {
-		return utils.ValidationError(errs)
+		return cerror.ValidationError(errs)
 	}
+
+	// Get identity
+	identity, ok := c.Locals("identity").(string)
+	if !ok {
+		cerr := *cerror.ErrUnauthorized
+		cerr.Message = "can not identify user"
+		return &cerr
+	}
+	userAgent := c.Locals("userAgent").(string)
+	ip := c.Locals("ip").(string)
 
 	// Route to service
-	identity := c.Locals("identity").(string)
 	result, err := auth.Login(&auth.LoginParams{
-		Username: dto.Username,
-		Password: dto.Password,
-		Identity: identity,
+		Username:  dto.Username,
+		Password:  dto.Password,
+		Identity:  identity,
+		IP:        ip,
+		UserAgent: userAgent,
 	})
 
-	// Some error in service
+	// Handle error from service
 	if err != nil {
-		return c.JSON(utils.ErrorResponse(err.Error()))
+		cerr := *cerror.ErrUnauthorized
+		cerr.Message = err.Error()
+		return &cerr
 	}
 
-	// Setting auth cookies
-	setAuthCookies(c, result)
+	// Set auth cookies
+	setAuthCookies(c, result.Tokens)
 
-	// Success
-	return c.JSON(utils.SuccessResponse(LoginResponse{
+	return c.JSON(response.SuccessResponse(LoginResponse{
 		ID:       result.ID,
 		Username: result.Username,
 	}))
 }
 
-// Set auth cookies with access and refresh tokens
-func setAuthCookies(c *fiber.Ctx, result *auth.LoginResult) {
-	// Setting access token cookie
-	setCookie(c, &CookieParams{
-		Name:    CookieNameAccessToken,
-		Value:   result.Access,
-		Expires: time.Now().Add(auth.TokenLiveTimeAccess),
-	})
+// Set or clear auth cookies based on the 'clear' flag
+func setAuthCookies(c *fiber.Ctx, tokens *auth.Tokens) {
+	if tokens == nil {
+		// Clear cookies by setting past time
+		clearTime := time.Unix(0, 0)
 
-	// Setting refresh token cookie
-	setCookie(c, &CookieParams{
-		Name:    CookieNameRefreshToken,
-		Value:   result.Refresh,
-		Expires: time.Now().Add(auth.TokenLiveTimeRefresh),
-	})
+		setCookie(c, &CookieParams{
+			Name:    CookieNameAccessToken,
+			Value:   "",
+			Expires: clearTime,
+		})
+
+		setCookie(c, &CookieParams{
+			Name:    CookieNameRefreshToken,
+			Value:   "",
+			Expires: clearTime,
+		})
+	} else {
+		// Set cookies normally
+		setCookie(c, &CookieParams{
+			Name:    CookieNameAccessToken,
+			Value:   tokens.Access,
+			Expires: time.Now().Add(auth.TokenLiveTimeAccess),
+		})
+
+		setCookie(c, &CookieParams{
+			Name:    CookieNameRefreshToken,
+			Value:   tokens.Refresh,
+			Expires: time.Now().Add(auth.TokenLiveTimeRefresh),
+		})
+	}
 }
 
-// General wrapper to set cookie
+// Set cookie
 func setCookie(c *fiber.Ctx, params *CookieParams) {
 	c.Cookie(&fiber.Cookie{
 		Name:     params.Name,
@@ -69,6 +99,7 @@ func setCookie(c *fiber.Ctx, params *CookieParams) {
 		Path:     "/api",
 		Domain:   "localhost",
 		Expires:  params.Expires,
+		MaxAge:   int(time.Until(params.Expires).Seconds()),
 		HTTPOnly: true,
 		Secure:   false,
 		SameSite: fiber.CookieSameSiteStrictMode,

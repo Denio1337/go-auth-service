@@ -1,23 +1,27 @@
 package auth
 
 import (
-	"app/internal/router/utils"
+	cerror "app/internal/router/types/error"
+	"app/internal/router/types/response"
 	"app/internal/router/validator"
 	"app/internal/service/auth"
+	"errors"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 func Register(c *fiber.Ctx) error {
-	//Parsing body
+	// Parse body
 	dto := new(RegisterDTO)
 	if err := c.BodyParser(dto); err != nil {
-		return err
+		cerr := *cerror.ErrInvalidInput
+		cerr.Message = "can not parse query body"
+		return &cerr
 	}
 
-	// Query parameters validation
+	// Validate body
 	if errs := validator.Validate(dto); len(errs) > 0 {
-		return utils.ValidationError(errs)
+		return cerror.ValidationError(errs)
 	}
 
 	// Route to service
@@ -26,13 +30,21 @@ func Register(c *fiber.Ctx) error {
 		Password: dto.Password,
 	})
 
-	// Some error in service
+	// Handle error from service
 	if err != nil {
-		return c.JSON(utils.ErrorResponse(err.Error()))
+		var cerr fiber.Error
+
+		if errors.Is(err, auth.ErrUserExists) {
+			cerr = *cerror.ErrConflict
+		} else {
+			cerr = *cerror.ErrInvalidInput
+		}
+
+		cerr.Message = err.Error()
+		return &cerr
 	}
 
-	// Success
-	return c.JSON(utils.SuccessResponse(RegisterResponse{
+	return c.JSON(response.SuccessResponse(RegisterResponse{
 		ID:       result.ID,
 		Username: result.Username,
 	}))

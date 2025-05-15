@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"app/internal/storage/model"
+	"errors"
 	"time"
 )
 
@@ -14,9 +14,11 @@ type (
 
 	// Login method params
 	LoginParams struct {
-		Username string
-		Password string
-		Identity string
+		Username  string
+		Password  string
+		Identity  string
+		IP        string
+		UserAgent string
 	}
 
 	// Login method result
@@ -55,15 +57,31 @@ type (
 		Identity string
 	}
 
+	// Refresh method params
+	RefreshParams struct {
+		Username  string
+		ID        uint
+		Identity  string
+		PairID    string
+		UserAgent string
+		IP        string
+	}
+
 	// Payload for JWT tokens
 	TokenPayload struct {
-		*model.User
+		Username string
+		ID       uint
 		Identity string
 		PairID   string
 	}
+)
 
-	// Token live time
-	TokenLiveTime time.Time
+// Errors
+var (
+	ErrUserExists = errors.New("service/register: user already exists")
+
+	ErrUserAgentChanged = errors.New("service/refresh: user agent changed")
+	ErrIPChanged        = errors.New("service/refresh: ip changed")
 )
 
 const (
@@ -71,6 +89,7 @@ const (
 	TokenTypeAccess  = "access"
 	TokenTypeRefresh = "refresh"
 
+	// Token live time
 	TokenLiveTimeAccess  = 3 * time.Minute
 	TokenLiveTimeRefresh = 3 * time.Hour
 )

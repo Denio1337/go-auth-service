@@ -20,7 +20,7 @@ type PostgresStorage struct {
 // Create new PostgreSQL storage implementation
 func New() (contract.Storage, error) {
 	// Parse port from environment
-	p := config.Get("DB_PORT")
+	p := config.Get(config.EnvDBPort)
 	port, err := strconv.ParseUint(p, 10, 32)
 	if err != nil {
 		return nil, err
@@ -30,22 +30,20 @@ func New() (contract.Storage, error) {
 	dsn := fmt.Sprintf(
 		"host=db port=%d user=%s password=%s dbname=%s sslmode=disable",
 		port,
-		config.Get("DB_USER"),
-		config.Get("DB_PASSWORD"),
-		config.Get("DB_NAME"),
+		config.Get(config.EnvDBUser),
+		config.Get(config.EnvDBPassword),
+		config.Get(config.EnvDBName),
 	)
 
-	// Trying to connect with default gorm config
+	// Try to connect with default gorm config
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Connection opened")
 
 	// Migrate schemas to database
 	db.AutoMigrate(&model.User{})
 	db.AutoMigrate(&model.RefreshToken{})
-	fmt.Println("Database migrated")
 
 	return &PostgresStorage{db: db}, nil
 }
@@ -67,6 +65,10 @@ func (s *PostgresStorage) GetUserByUsername(username string) (*model.User, error
 
 func (s *PostgresStorage) AddUser(user *model.User) error {
 	if err := s.db.Create(user).Error; err != nil {
+		if isUniqueConstraintError(err) {
+			return contract.ErrDuplicatedKey
+		}
+
 		return err
 	}
 
@@ -120,26 +122,32 @@ func (s *PostgresStorage) AddRefreshToken(token *model.RefreshToken) error {
 	return nil
 }
 
-func (s *PostgresStorage) RevokeRefreshTokenByPairID(pairID string) error {
-	if err := s.db.Delete(&model.RefreshToken{}, "pair_id = ?", pairID).Error; err != nil {
-		return err
+func (s *PostgresStorage) RevokeRefreshTokenByPairID(pairID string) (uint, error) {
+	result := s.db.Delete(&model.RefreshToken{}, "pair_id = ?", pairID)
+
+	if err := result.Error; err != nil {
+		return 0, err
 	}
 
-	return nil
+	return uint(result.RowsAffected), nil
 }
 
-func (s *PostgresStorage) RevokeRefreshTokenByIdentity(identity string) error {
-	if err := s.db.Unscoped().Delete(&model.RefreshToken{}, "identity = ?", identity).Error; err != nil {
-		return err
+func (s *PostgresStorage) RevokeRefreshTokenByIdentity(identity string) (uint, error) {
+	result := s.db.Unscoped().Delete(&model.RefreshToken{}, "identity = ?", identity)
+
+	if err := result.Error; err != nil {
+		return 0, err
 	}
 
-	return nil
+	return uint(result.RowsAffected), nil
 }
 
-func (s *PostgresStorage) RevokeRefreshTokenByID(id uint) error {
-	if err := s.db.Unscoped().Delete(&model.RefreshToken{}, id).Error; err != nil {
-		return err
+func (s *PostgresStorage) RevokeRefreshTokenByID(id uint) (uint, error) {
+	result := s.db.Unscoped().Delete(&model.RefreshToken{}, id)
+
+	if err := result.Error; err != nil {
+		return 0, err
 	}
 
-	return nil
+	return uint(result.RowsAffected), nil
 }

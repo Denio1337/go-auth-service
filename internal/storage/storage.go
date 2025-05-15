@@ -40,10 +40,20 @@ func GetRefreshTokenByIdentity(identity string) (*model.RefreshToken, error) {
 	return instance.GetRefreshTokenByIdentity(identity)
 }
 
-func RevokeRefreshTokenByIdentity(identity string) error {
+func RevokeRefreshTokenByIdentity(identity string) (uint, error) {
 	return instance.RevokeRefreshTokenByIdentity(identity)
 }
 
-func RevokeRefreshTokenByID(id uint) error {
+func RevokeRefreshTokenByID(id uint) (uint, error) {
 	return instance.RevokeRefreshTokenByID(id)
 }
+
+func RevokeRefreshTokenByPairID(pairId string) (uint, error) {
+	return instance.RevokeRefreshTokenByPairID(pairId)
+}
+
+// Errors
+
+var (
+	ErrDuplicatedKey = contract.ErrDuplicatedKey
+)

@@ -11,5 +11,5 @@ func main() {
 	app := router.New()
 
 	// Run application
-	log.Fatal(app.Listen(config.Get("APP_ADDRESS")))
+	log.Fatal(app.Listen(config.Get(config.EnvAppAddress)))
 }

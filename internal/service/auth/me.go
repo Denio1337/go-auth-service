@@ -2,18 +2,21 @@ package auth
 
 import (
 	"app/internal/storage"
-	"errors"
+	"fmt"
 )
 
-// Get access and refresh tokens
+// Get user info
 func Me(params *MeParams) (*MeResult, error) {
-	// Getting user from storage
+	const op = "service/me"
+
+	// Get user from storage
 	user, err := storage.GetUserByID(params.ID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: can not get user from storage", op)
 	}
+	// User not found
 	if user == nil {
-		return nil, errors.New("service/auth: unknown user")
+		return nil, fmt.Errorf("%s: unknown username", op)
 	}
 
 	return &MeResult{
